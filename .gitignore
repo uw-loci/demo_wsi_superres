@@ -4,4 +4,5 @@ input_test_*/
 output_patch_temp/
 output_test_*/
 weights/
+fiji/
 *.csv

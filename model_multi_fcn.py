@@ -8,27 +8,6 @@ import math
 #####################################
 #   Convolutional Skip Connection
 #####################################
-class SkipBlock(nn.Module):
-    def __init__(self, in_features, out_features, residual=False):
-        super(SkipBlock, self).__init__()
-        self.skip = nn.Sequential(
-            nn.Conv2d(
-                in_channels=in_features, out_channels=out_features, kernel_size=3, stride=1, padding=1
-            ),
-            nn.BatchNorm2d(out_features),
-            nn.LeakyReLU(0.1), # parameters
-            nn.Conv2d(
-                in_channels=out_features, out_channels=out_features, kernel_size=1, stride=1, bias=False
-            ),
-            nn.BatchNorm2d(out_features),
-            nn.LeakyReLU(0.1) # parameters
-        )
-        self.residual = residual
-
-    def forward(self, x):
-        return self.skip(x)
-    
-
 
 def weights_init_normal(m):
     classname = m.__class__.__name__
@@ -37,7 +16,24 @@ def weights_init_normal(m):
     elif classname.find("BatchNorm2d") != -1:
         torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
         torch.nn.init.constant_(m.bias.data, 0.0)
+        
+class SkipBlock(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(SkipBlock, self).__init__()
+        self.skip = nn.Sequential(
+            nn.Conv2d(
+                in_channels=in_features, out_channels=out_features, kernel_size=3, stride=1, padding=1
+            ),
+            nn.InstanceNorm2d(out_features, affine=True),
+            nn.Conv2d(
+                in_channels=out_features, out_channels=out_features, kernel_size=1, stride=1, bias=False
+            ),
+            nn.InstanceNorm2d(out_features, affine=True),
+            nn.LeakyReLU(0.1, True)
+        )
 
+    def forward(self, x):
+        return self.skip(x)
 
 ##############################
 #          RES U-NET
@@ -50,13 +46,15 @@ class UNetDown(nn.Module):
         super(UNetDown, self).__init__()
         layers = [
             nn.Conv2d(in_size, out_size, 4, 2, 1),
-            nn.BatchNorm2d(out_size),
-            nn.LeakyReLU(0.1),
+            nn.InstanceNorm2d(out_size, affine=True),
+            nn.Conv2d(out_size, out_size, 3, 1, 1),
+            nn.InstanceNorm2d(out_size, affine=True),
             nn.Conv2d(out_size, out_size, 1, 1, bias=False),
+            nn.InstanceNorm2d(out_size, affine=True),
         ]
         if normalize:
-            layers.append(nn.BatchNorm2d(out_size))
-        layers.append(nn.LeakyReLU(0.1))
+            layers.append(nn.InstanceNorm2d(out_size))
+        layers.append(nn.LeakyReLU(0.1, True))
         if dropout:
             layers.append(nn.Dropout(dropout))
         side = [
@@ -76,11 +74,10 @@ class UNetUp(nn.Module):
         super(UNetUp, self).__init__()
         layers = [
             nn.Conv2d(in_size, out_size, 3, 1, 1),
-            nn.BatchNorm2d(out_size),
-            nn.ReLU(inplace=True),
+            nn.InstanceNorm2d(out_size, affine=True),
             nn.Conv2d(out_size, out_size, 1, 1, bias=False),
-            nn.BatchNorm2d(out_size),
-            nn.ReLU(inplace=True),
+            nn.InstanceNorm2d(out_size, affine=True),
+            nn.LeakyReLU(0.1, True),
         ]
         side = [
             nn.Conv2d(in_size, out_size, 1, 1, bias=False),
@@ -143,6 +140,31 @@ class ResUNet(nn.Module):
 
         return self.final3c(u5)
     
+class OneNet(nn.Module):
+    def __init__(self, in_channels=3, out_channels=1):
+        super(OneNet, self).__init__()
+        self.down1 = UNetDown(in_channels, 64, normalize=False)
+        self.skip1 = SkipBlock(64, 64)
+        self.skip2 = SkipBlock(64, 64)
+        self.skip3 = SkipBlock(64, 64)
+        self.skip4 = SkipBlock(64, 64)
+        self.skip5 = SkipBlock(64, 64)
+        self.final = nn.Sequential(
+            nn.Conv2d(128, 12, 3, 1, 1),
+            nn.PixelShuffle(2),
+            nn.Sigmoid()
+        )
+    def forward(self, x):
+        d1 = self.down1(x)
+        d2 = self.skip1(d1)
+        d3 = self.skip2(d2+d1)
+        d4 = self.skip3(d3+d2)
+        d5 = self.skip4(d4+d3)
+        d6 = self.skip4(d5+d4)
+        
+        return self.final(torch.cat((d6, d1), 1))
+        
+        
 ##############################
 #        Discriminator
 ##############################

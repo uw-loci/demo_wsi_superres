@@ -63,10 +63,10 @@ class SynthDataset(Dataset):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='weights/shg.pth', help='path to model weights')
+    parser.add_argument('--weights', type=str, default='weights/sisr.pth', help='path to model weights')
     parser.add_argument('--use-cuda', type=int, default=1, help='1: use cuda, 0: use cpu')
     parser.add_argument('--which-gpu', type=int, default=0, help='index of gpu')
-    parser.add_argument('--load-multiple-gpu-weights', type=int, default=1, help='1: multiple gpu weights, 0: single gpu weghts')
+    parser.add_argument('--load-multiple-gpu-weights', type=int, default=0, help='1: multiple gpu weights, 0: single gpu weghts')
     parser.add_argument('--input-folder', type=str, default='default', help='input_test + _FOLDERNAME')
     parser.add_argument('--intensity', type=tuple, default=(20, 180), help='output intensity rescale')
     parser.add_argument('--pilot', type=int, default=0, help='1: only process the first image, 0: process all images')
@@ -87,7 +87,7 @@ def demo(args):
     else:
         device = 'cpu'
 
-    model = md.GeneratorUNet(3,1)
+    model = md.ResUNet(3, 3)
     DICT_DIR = args.weights
     state_dict = torch.load(DICT_DIR, map_location=torch.device(device))
 
@@ -119,8 +119,8 @@ def demo(args):
     os.mkdir(OUTPUT_DIR)
     files = [f for f in os.listdir(INPUT_DIR)]
     files.sort()
-    window_shape = (128, 128, 3)
-    step_size = 96
+    window_shape = (256, 256, 3)
+    step_size = 224
     is_crf = False
     for k, fn in enumerate(files):
         print('forward pass, please wait...')  
