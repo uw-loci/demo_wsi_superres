@@ -1,0 +1,7 @@
+channel_temp/
+input_patch_temp/
+input_test_*/
+output_patch_temp/
+output_test_*/
+weights/
+*.csv
