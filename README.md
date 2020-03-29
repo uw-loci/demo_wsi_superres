@@ -3,7 +3,7 @@ Program for sinlge image super-resolution for whole slide imaging of H&amp;E sta
 
 |Input low-resolution H&amp;E| Output high-resolution H&amp;E |
 |----------|--------|
-|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/input.png" width="320">|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/output.png" width="320">|
+|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/lowres.jpg" width="320">|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/resolved.jpg" width="320">|
 
 ## Required packages
 Install required packages in a virtual environment, commands for anaconda/miniconda are listed
