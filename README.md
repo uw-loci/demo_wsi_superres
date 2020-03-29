@@ -1,9 +1,9 @@
-# Second-harmonic Generation Collagen Image Synthesis from Hematoxylin and Eosin Image Using Image-to-image Translation Neural Network
-Program for a complete H&amp;E-SHG synthesizing workflow
+# Single Image Super-resolution for Whole Slide Imaging
+Program for sinlge image super-resolution for whole slide imaging of H&amp;E stained histopathological slides 
 
-|Input H&amp;E| Synthesized Collagen Image |
+|Input low-resolution H&amp;E| Output high-resolution H&amp;E |
 |----------|--------|
-|<img src="https://github.com/uw-loci/he_shg_synth_workflow/blob/master/thumbnails/he.jpg" width="320">|<img src="https://github.com/uw-loci/he_shg_synth_workflow/blob/master/thumbnails/shg.jpg" width="320">|
+|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/input.png" width="320">|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/output.png" width="320">|
 
 ## Required packages
 Install required packages in a virtual environment, commands for anaconda/miniconda are listed
