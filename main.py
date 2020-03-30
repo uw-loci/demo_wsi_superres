@@ -69,6 +69,7 @@ def main():
     parser.add_argument('--load-multiple-gpu-weights', type=int, default=0, help='1: multiple gpu weights, 0: single gpu weghts')
     parser.add_argument('--input-folder', type=str, default='default', help='input_test + _FOLDERNAME')
     parser.add_argument('--intensity', type=tuple, default=(0, 230), help='output intensity rescale')
+    parser.add_argument('--upscale-factor', type=int, default=8, help='upscale factor')
     parser.add_argument('--pilot', type=int, default=0, help='1: only process the first image, 0: process all images')
     
     args = parser.parse_args()
@@ -131,6 +132,7 @@ def demo(args):
         
         fs = os.path.join(INPUT_DIR, fn)
         img = io.imread(fs)
+        img = rescale(img, args.upscale_factor)
         
         shape_0_factor = np.ceil(img.shape[0] / window_shape[0]) # height
         shape_1_factor = np.ceil(img.shape[1] / window_shape[1]) # width
