@@ -62,7 +62,7 @@ Output images are saved in "output_test_default" folder by default.
 [--use-cuda]          # 1: use GPU, 0: use CPU                            default: (int) 1
 [--which-gpu]         # index of the GPU                                  default: (int) 0
 [--input-folder]      # name of input folder (input_test_[NAME])          default: (str) default
-[--intensity]         # output intensity rescale                          default: (tuple) (20, 180)
+[--intensity]         # output intensity rescale                          default: (tuple) (0, 230)
 [--pilot]             # 1: process the first image, 0: process all images default: (int) 0
 ```
 Test customized images:
