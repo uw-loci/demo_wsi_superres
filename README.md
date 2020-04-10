@@ -32,9 +32,9 @@ Install required packages in a virtual environment, commands for anaconda/minico
 ```
 conda install -c conda-forge pyimagej
 ```
-* scikit-image==0.16.2
+* scikit-image==0.15.0
 ```
-  conda install -c anaconda scikit-image=0.16.2
+  conda install -c anaconda scikit-image=0.15.0
 ```  
 * tqdm==4.42.0
 ```
