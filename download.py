@@ -29,7 +29,7 @@ def unzip_data(zip_path, data_path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--url', type=str, 
-                        default='https://uwmadison.box.com/shared/static/2gt7wqgdkyxv6pos0i18ni4q9sx36dnr.zip', 
+                        default='https://uwmadison.box.com/shared/static/p31h9si723me5twx6czkp5hnconddtsr.zip', 
                         help='url to dataset')
     parser.add_argument('--path', type=str, default='data.zip', help='path to store data')
     parser.add_argument('--url-weights', type=str, 
@@ -39,15 +39,11 @@ def main():
     
     args = parser.parse_args()
     
-    print('downloading data')
+    print('downloading TMA data')
     download_url(args.url, args.path)
-    unzip_data(args.path, 'input_test_default')
+    unzip_data(args.path, 'dataset/TMA')
     os.remove(args.path)
-    print('downloading model weights')
-    if os.path.exists('weights'): shutil.rmtree('weights') 
-    os.mkdir('weights')
-    download_url(args.url_weights, args.path_weights)
-    print('downloading fiji')
+    print('downloading ImageJ/Fiji')
     download_url('https://uwmadison.box.com/shared/static/mysrf3cvyhlk4orvhuwi53t5pm0b53k8.zip',
                  'fiji.zip')
     unzip_data('fiji.zip', 'fiji')

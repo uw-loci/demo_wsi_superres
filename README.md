@@ -1,76 +1,58 @@
-# Single Image Super-resolution for Whole Slide Imaging
-Program for sinlge image super-resolution for whole slide imaging of H&amp;E stained histopathological slides 
+# WSISR: Single image super-resolution for whole slide image using convolutional neural networks and self-supervised color normalization  
+This is the PyTorch implementation of using generative adversarial neural networks for single-image super-resolution in whole slide image. [Paper](https://www.sciencedirect.com/science/article/abs/pii/S1361841520303029)
 
-|Input low-resolution H&amp;E| Output high-resolution H&amp;E |
-|----------|--------|
-|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/lowres.jpg" width="320">|<img src="https://github.com/uw-loci/demo_wsi_superres/blob/master/thumbnails/resolved.jpg" width="320">|
+<div align="center">
+  <img src="thumbnails/github.png" width="700px" />
+</div>
 
-## Required packages
-Install required packages in a virtual environment, commands for anaconda/miniconda are listed
-* python==3.6.x
+## Installation
+Install [anaconda/miniconda](https://docs.conda.io/en/latest/miniconda.html)  
+Required packages
 ```
-  conda create --name [NAME_ENV] python=3.6
-  conda activate [NAME_ENV]
+  $ conda env create --name wsisr --file env.yml
+  $ conda activate wsisr
 ```
-* matplotlib==3.1.2 
-```
-  conda install -c conda-forge matplotlib=3.1.2
+
+## Install PyTorch-FID
+MacOS/Linux:  
 ```  
-* numpy==1.17.4
+  $ pip install pytorch-fid
 ```
-  conda install -c anaconda numpy=1.17.4
+Windows:  
 ```  
-* pandas==0.25.3
+  $ pip install git+https://github.com/mseitzer/pytorch-fid.git
 ```
-  conda install -c anaconda pandas=0.25.3
-``` 
-* Pillow==5.3.0
-```
-  conda install -c anaconda pillow=5.3.0
+ 
+## Download TMA dataset and Fiji-ImageJ
 ```  
-* pyimagej==0.4.0
-```
-conda install -c conda-forge pyimagej
-```
-* scikit-image==0.15.0
-```
-  conda install -c anaconda scikit-image=0.15.0
-```  
-* tqdm==4.42.0
-```
-  conda install -c conda-forge tqdm=4.42.0
-```  
-* pytorch>=1.3.1
-```
-  conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
-```  
-## Download example testing data, trained model weights, FIJI
-Execute download.py
-```  
-python download.py
+  $ python download.py
 ```
   
-## Run demo
-Execute main.py
+## Training
+You will need GPU/CUDA support to run the training.  
 ```  
-python main.py
+  $ python train-compress.py
 ```
 
-Output images are saved in "output_test_default" folder by default.
-### Argumenets for main.py
+### Arguments
 ```
-[--use-cuda]          # 1: use GPU, 0: use CPU                            default: (int) 1
-[--which-gpu]         # index of the GPU                                  default: (int) 0
-[--input-folder]      # name of input folder (input_test_[NAME])          default: (str) default
-[--intensity]         # output intensity rescale                          default: (tuple) (0, 230)
-[--pilot]             # 1: process the first image, 0: process all images default: (int) 0
+[--batch-size]        # Size of the mini-batch                      	   default: (int) 32
+[--patch-size]        # Size of extracted patch                            default: (int) 224
+[--up-scale]      	  # Targeted upscale factor         				   default: (float) 5
+[--num-epochs]        # Number of training epochs                          default: (int) 900
+[--g-lr]              # Learning rate of generator      				   default: (float) 0.0001
+[--d-lr]              # Learning rate of descriminator      			   default: (float) 0.00001
+[--percep-weight]     # GAN loss weight      			   				   default: (float) 0.001
+[--run-from]          # Load weights from a previous run      			   default: None
+[--start-epoch]       # Starting epoch for the curriculum      			   default: (int) 1
+[--gan]          	  # Enable GAN training 1: on, 0: off    			   default: (int) 1
+[--num-critic]        # Interval of descriminator training  			   default: (int) 1
 ```
-Test customized images:
+Please check python argument help for more details.  
 
-1. Create a folder named "input_test_[NAME]" containing input images.
-2. Execute main.py with option "--input-folder=[NAME]".
-```
-python main.py --input-folder=[NAME]
-```
-3. Output images are saved in "output_test_[NAME]" folder.
+### Output
+1. Output images: the final output testing images will be stitched ('output/lr/', 'output/hr/', 'output/sr/') when the training completes. During the training, validation patches are printed in 'output/print/'.  
+2. Model weights are saved in 'weights/'. Each run will create a separate folder. Use the folder name as the argument '--run-from' will load the corresponding weights.  
+3. 1/2 of the epochs are used for curriculum learning where the mean of the upscale factor increases. Start the epoch at 1/2 of the total epoch can skip the curriculum.  
+4. Patches are randomly extracted from the TMA. GAN-based training can take very long time to converge.  
   
