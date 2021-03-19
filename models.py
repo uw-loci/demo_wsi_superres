@@ -115,7 +115,7 @@ class Generator(nn.Module):
     
         
 class Discriminator(nn.Module):
-    def __init__(self, in_channels=3):
+    def __init__(self, in_channels=3, norm=None):
         super(Discriminator, self).__init__()
 
         def discriminator_block(in_filters, out_filters, norm=None):
@@ -129,10 +129,10 @@ class Discriminator(nn.Module):
             return layers
 
         self.model = nn.Sequential(
-            *discriminator_block(in_channels * 2, 64, norm=None),
-            *discriminator_block(64, 128),
-            *discriminator_block(128, 256),
-            *discriminator_block(256, 512),
+            *discriminator_block(in_channels * 2, 64, norm),
+            *discriminator_block(64, 128, norm),
+            *discriminator_block(128, 256, norm),
+            *discriminator_block(256, 512, norm),
             nn.ZeroPad2d((1, 0, 1, 0)),
             nn.Conv2d(512, 1, 4, padding=1, bias=False)
         )
