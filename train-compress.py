@@ -114,7 +114,10 @@ def train(args, epoch, run, dataloader, generator, discriminator, optimizer_G, o
 def test(args, generator, test_csv, stitching=False):
     print('loading ImageJ, please wait')
     ij = imagej.init('fiji/fiji/Fiji.app/')
-    shutil.rmtree('output')
+    try:
+        shutil.rmtree('output')
+    except:
+        pass
     os.makedirs('output', exist_ok=True)
     os.makedirs('output/lr', exist_ok=True)
     os.makedirs('output/hr', exist_ok=True)
@@ -235,7 +238,9 @@ def main():
     parser.add_argument('--run-from', default=None, type=str, help='Load weights from a previous run, use folder name in [weights] folder')
     parser.add_argument('--start-epoch', default=1, type=int, help='Starting epoch for the curriculum, start at 1/2 of the epochs to skip the curriculum')
     parser.add_argument('--gan', default=1, type=int, help='Use GAN')
-    parser.add_argument('--num-critic', default=1, type=int, help='Interval of training the descriminator') 
+    parser.add_argument('--num-critic', default=1, type=int, help='Iteration interval for training the descriminator') 
+    parser.add_argument('--test-interval', default=50, type=int, help='Epoch interval for FID score testing')
+    parser.add_argument('--print-interval', default=10, type=int, help='Epoch interval for output printing')     
     args = parser.parse_args()
     warnings.filterwarnings('ignore')
     device = torch.device('cuda:0')
@@ -273,10 +278,11 @@ def main():
         train(args, epoch, run, train_dataset, generator, discriminator, optimizer_G, optimizer_D, criterionL, criterionMSE, tensor, device, patch)
         scheduler_G.step()
         scheduler_D.step()
-        if epoch % 1 == 0:
+        if epoch % args.test_interval == 0:
             fid, psnr = test(args, generator, data.compress_csv_path('valid'))
-            print_output(generator, valid_dataset, device)
             print('\r>>>> PSNR: {}, FID: {}'.format(psnr, fid))
+        if epoch % args.print_interval == 0:
+            print_output(generator, valid_dataset, device)
     test(args, generator, data.compress_csv_path('valid'), stitching=True)
     
 if __name__ == '__main__':
