@@ -30,9 +30,14 @@ Windows:
 ```
   
 ## Training
-You will need GPU/CUDA support to run the training.  
+You will need GPU/CUDA support to run the training.
+### Training on upscaling compressed low-resolution image.  
 ```  
-  $ python train-compress.py
+  $ python train_compress.py
+```
+### Training on registered low-NA/high-NA image pairs. 
+```  
+  $ python train_paired.py
 ```
 
 ### Arguments
@@ -48,6 +53,12 @@ You will need GPU/CUDA support to run the training.
 [--start-epoch]       # Starting epoch for the curriculum       default: (int) 1
 [--gan]               # Enable GAN training 1: on, 0: off       default: (int) 1
 [--num-critic]        # Interval of descriminator training      default: (int) 1
+[--test-interval]     # Epoch interval for FID score testing    default: (int) 50
+[--print-interval]    # Epoch interval for output printing      default: (int) 10
+[--dataset]           # Dataset folder name      				default: (str) TMA
+[--in-folder]         # Low NA image folder name     			default: (str) low
+[--out-folder]        # High NA image folder name      			default: (str) high
+[--extension]         # Training image extension      			default: (str) jpg
 ```
 Please check python argument help for more details.  
 

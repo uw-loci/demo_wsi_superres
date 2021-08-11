@@ -9,8 +9,37 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import torchvision.transforms.functional as F
 from PIL import Image, ImageFilter
+from sklearn.utils import shuffle
 
 plt.ion()   # interactive mode
+
+class Paired_Dataset(Dataset):
+
+    def __init__(self, csv_file, img_size=256, transform=None):
+     
+        self.files_list = pd.read_csv(csv_file)
+        self.transform = transform
+        self.img_size = img_size
+
+    def __len__(self):
+        return len(self.files_list)
+
+    def __getitem__(self, idx):      
+        
+        low_name = os.path.join(self.files_list.iloc[idx, 0])
+        high_name = os.path.join(self.files_list.iloc[idx, 1])
+        low_image = Image.open(low_name)
+        high_image = Image.open(high_name)
+        if low_image.size[0] != self.img_size:
+            low_image = low_image.resize((self.img_size, self.img_size))
+            high_image = high_image.resize((self.img_size, self.img_size))
+
+        sample = {'input': low_image, 'output': high_image}
+
+        if self.transform:
+            sample = self.transform(sample)
+
+        return sample
 
 class Compress_Dataset(Dataset):
     def __init__(self, csv_file, transform=None):   
@@ -100,20 +129,42 @@ def show_patch(dataloader, index = 0, is_hsv = False):
             plt.axis('off')
             break
             
-def generate_compress_csv():
-    train_imgs = glob.glob('dataset/TMA/20x-cores-training/*.jpg')
+def generate_compress_csv(dataset='TMA', ext='jpg'):
+    train_imgs = glob.glob(os.path.join('dataset', dataset, '*.'+ext)) + glob.glob(os.path.join('dataset', dataset, '*', '*.'+ext))
     random.shuffle(train_imgs)
     train_df = pd.DataFrame(train_imgs[0:int(0.8*len(train_imgs))])
     valid_df = pd.DataFrame(train_imgs[int(0.8*len(train_imgs)):int(0.9*len(train_imgs))])
     test_df = pd.DataFrame(train_imgs[int(0.9*len(train_imgs)):])
-    train_df.to_csv('dataset/TMA/train-compress.csv', index=False)
-    valid_df.to_csv('dataset/TMA/valid-compress.csv', index=False)
-    test_df.to_csv('dataset/TMA/test-compress.csv', index=False)
+    train_df.to_csv(os.path.join('dataset', dataset, 'train-compress.csv'), index=False)
+    valid_df.to_csv(os.path.join('dataset', dataset, 'valid-compress.csv'), index=False)
+    test_df.to_csv(os.path.join('dataset', dataset, 'test-compress.csv'), index=False)
     
-def compress_csv_path(csv='train'):
+def compress_csv_path(csv='train', dataset=None):
     if csv =='train':
-        return 'dataset/TMA/train-compress.csv'
+        return os.path.join('dataset', dataset, 'train-compress.csv')
     if csv =='test':
-        return 'dataset/TMA/test-compress.csv'
+        return os.path.join('dataset', dataset, 'valid-compress.csv')
     if csv =='valid':
-        return 'dataset/TMA/valid-compress.csv'
+        return os.path.join('dataset', dataset, 'test-compress.csv')
+        
+def generate_paired_csv(dataset='TMA', in_folder=None, out_folder=None, ext='jpg'):
+    train_imgs_in = glob.glob(os.path.join('dataset', dataset, in_folder, '*.'+ext)) + glob.glob(os.path.join('dataset', dataset, in_folder, '*', '*.'+ext))
+    train_imgs_out = glob.glob(os.path.join('dataset', dataset, out_folder, '*.'+ext)) + glob.glob(os.path.join('dataset', dataset, out_folder, '*', '*.'+ext))
+    df = pd.DataFrame(train_imgs_in)
+    df = df.assign(e=pd.DataFrame(train_imgs_out).values)
+    df = shuffle(df)
+    train_df = pd.DataFrame(df.iloc[0:int(0.8*len(train_imgs_in)), :])
+    valid_df = pd.DataFrame(df.iloc[int(0.8*len(train_imgs_in)):int(0.9*len(train_imgs_in)), :])
+    test_df = pd.DataFrame(df.iloc[int(0.9*len(train_imgs_in)):, :])
+    train_df.to_csv(os.path.join('dataset', dataset, 'train-paired.csv'), index=False)
+    valid_df.to_csv(os.path.join('dataset', dataset, 'valid-paired.csv'), index=False)
+    test_df.to_csv(os.path.join('dataset', dataset, 'test-paired.csv'), index=False)
+    
+def paired_csv_path(csv='train', dataset=None):
+    if csv =='train':
+        return os.path.join('dataset', dataset, 'train-paired.csv')
+    if csv =='test':
+        return os.path.join('dataset', dataset, 'valid-paired.csv')
+    if csv =='valid':
+        return os.path.join('dataset', dataset, 'test-paired.csv')
+        
