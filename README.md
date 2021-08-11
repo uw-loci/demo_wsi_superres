@@ -55,10 +55,10 @@ You will need GPU/CUDA support to run the training.
 [--num-critic]        # Interval of descriminator training      default: (int) 1
 [--test-interval]     # Epoch interval for FID score testing    default: (int) 50
 [--print-interval]    # Epoch interval for output printing      default: (int) 10
-[--dataset]           # Dataset folder name      				default: (str) TMA
-[--in-folder]         # Low NA image folder name     			default: (str) low
-[--out-folder]        # High NA image folder name      			default: (str) high
-[--extension]         # Training image extension      			default: (str) jpg
+[--dataset]           # Dataset folder name      		default: (str) TMA
+[--in-folder]         # Low NA image folder name     		default: (str) low
+[--out-folder]        # High NA image folder name      		default: (str) high
+[--extension]         # Training image extension      		default: (str) jpg
 ```
 Please check python argument help for more details.  
 
