@@ -112,8 +112,6 @@ def train(args, epoch, run, dataloader, generator, discriminator, optimizer_G, o
         torch.save(discriminator.state_dict(), d_path)
 
 def test(args, generator, test_csv, stitching=False):
-    print('loading ImageJ, please wait')
-    ij = imagej.init('fiji/fiji/Fiji.app/')
     try:
         shutil.rmtree('output')
     except:
@@ -272,6 +270,8 @@ def main():
     cur_length = int(0.5*args.num_epochs)
     init_scale = 2**2
     step_size = (2**args.up_scale-init_scale) / cur_length
+    print('loading ImageJ, please wait')
+    ij = imagej.init('fiji/fiji/Fiji.app/')
     for epoch in range(args.start_epoch, args.num_epochs):
         factor = min(log2(init_scale+(epoch-1)*step_size), args.up_scale)
         print('curriculum updated: {} '.format(factor))
@@ -280,7 +280,7 @@ def main():
         scheduler_G.step()
         scheduler_D.step()
         if epoch % args.test_interval == 0:
-            fid, psnr = test(args, generator, data.compress_csv_path('valid'))
+            fid, psnr = test(args, generator, data.compress_csv_path('valid', args.dataset))
             print('\r>>>> PSNR: {}, FID: {}'.format(psnr, fid))
         if epoch % args.print_interval == 0:
             print_output(generator, valid_dataset, device)
