@@ -1,16 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-import torch.nn.functional as F
-
-def weights_init_normal(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
-        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find("BatchNorm2d") != -1:
-        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
-        torch.nn.init.constant_(m.bias.data, 0.0)
-        
+import torch.nn.functional as F     
+from torchvision.models import vgg19
         
 class ConvBlock(torch.nn.Module):   
     def __init__(self, input_size, output_size, kernel_size=3, stride=1, padding=1, bias=True, norm=None):
@@ -125,7 +117,7 @@ class Discriminator(nn.Module):
                 layers.append(nn.InstanceNorm2d(out_filters))
             if norm == 'batch':
                 layers.append(nn.BatchNorm2d(out_filters))
-            layers.append(nn.LeakyReLU(0.2, inplace=True))
+            layers.append(nn.ReLU(inplace=True))
             return layers
 
         self.model = nn.Sequential(
@@ -138,6 +130,16 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, img_A, img_B):
-        # Concatenate image and condition image by channels to produce input
+        """Concatenate image and condition image by channels to produce input"""
         img_input = torch.cat((img_A, img_B), 1)
         return self.model(img_input)
+        
+        
+class FeatureExtractor(nn.Module):
+    def __init__(self):
+        super(FeatureExtractor, self).__init__()
+        vgg19_model = vgg19(pretrained=True)
+        self.vgg19_54 = nn.Sequential(*list(vgg19_model.features.children())[:35])
+
+    def forward(self, img):
+        return self.vgg19_54(img)
