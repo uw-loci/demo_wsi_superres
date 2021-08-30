@@ -71,12 +71,14 @@ Please check python argument help for more details.
 ## Citation
 Please use the following BibTeX entry.  
 ```
-@article{li2020singleimage,
-	title = {Single image super-resolution for whole slide image using convolutional neural networks and self-supervised color normalization},
-	issn = {13618415},
-	doi = {10.1016/j.media.2020.101938},
-	journal = {Medical Image Analysis},
-	author = {Li, Bin and Keikhosravi, Adib and Loeffler, Agnes G. and Eliceiri, Kevin W.},
-	year = {2020}
+@article{LI2021101938,
+title = {Single image super-resolution for whole slide image using convolutional neural networks and self-supervised color normalization},
+journal = {Medical Image Analysis},
+volume = {68},
+pages = {101938},
+year = {2021},
+issn = {1361-8415},
+doi = {https://doi.org/10.1016/j.media.2020.101938},
+author = {Bin Li and Adib Keikhosravi and Agnes G. Loeffler and Kevin W. Eliceiri}
 }
 ```
