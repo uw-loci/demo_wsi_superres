@@ -39,7 +39,7 @@ def new_compress_curriculum(args, cur_factor, csv='train', stc=False):
     dataloader = DataLoader(transformed_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     return dataloader
 
-def train(args, epoch, run, dataloader, generator, discriminator, optimizer_G, optimizer_D, criterion_pixel, criterion_percep, criterionMSE, Tensor=None, device='cuda:0', patch=None):
+def train(args, epoch, run, dataloader, generator, feature_extractor, discriminator, optimizer_G, optimizer_D, criterion_pixel, criterion_percep, criterionMSE, Tensor=None, device='cuda:0', patch=None):
     l = args.gan_weight
     p = args.pixel_weight
     if args.gan == 0:
@@ -130,7 +130,7 @@ def train(args, epoch, run, dataloader, generator, discriminator, optimizer_G, o
         os.makedirs(os.path.join('weights', run), exist_ok=True)
         torch.save(discriminator.state_dict(), d_path)
 
-def test(args, generator, test_csv, stitching=False):
+def test(args, generator, test_csv, stitching=False, ij=None):
     try:
         shutil.rmtree('output')
     except:
@@ -267,9 +267,11 @@ def main():
     data.generate_compress_csv()
     valid_dataset = new_compress_curriculum(args, args.up_scale, 'valid')
     generator = models.Generator()
-    generator.to(device);
+    generator.to(device)
     discriminator = models.Discriminator()
-    discriminator.to(device);
+    discriminator.to(device)
+    feature_extractor = models.FeatureExtractor().to(device)
+    feature_extractor.eval()
     criterion_pixel = nn.L1Loss().to(device)
     criterionMSE = nn.MSELoss().to(device)
     criterion_percep = nn.L1Loss().to(device)
@@ -305,7 +307,7 @@ def main():
             print('\r>>>> PSNR: {}, FID: {}'.format(psnr, fid))
         if epoch % args.print_interval == 0:
             print_output(generator, valid_dataset, device)
-    test(args, generator, data.compress_csv_path('test', args.dataset), stitching=True)
+    test(args, generator, data.compress_csv_path('test', args.dataset), stitching=True, ij=ij)
     
 if __name__ == '__main__':
     main()
