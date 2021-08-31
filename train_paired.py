@@ -63,7 +63,8 @@ def train(args, epoch, run, dataloader, generator, feature_extractor, discrimina
             # GAN loss
             pred_real = discriminator(real_high.detach(), real_low)
             pred_fake = discriminator(fake_high, real_low)
-            loss_GAN = criterionMSE(pred_fake-pred_real.mean(0, keepdim=True), valid)
+            # loss_GAN = criterionMSE(pred_fake-pred_real.mean(0, keepdim=True), valid)
+            loss_GAN = criterionMSE(pred_fake, valid)
         
             # Identity loss
             loss_pixel = criterion_pixel(fake_high, real_high)   
@@ -84,8 +85,10 @@ def train(args, epoch, run, dataloader, generator, feature_extractor, discrimina
                 optimizer_D.zero_grad() 
                 pred_real = discriminator(real_high, real_low)
                 pred_fake = discriminator(fake_high.detach(), real_low)
-                loss_real = criterionMSE(pred_real-pred_fake.mean(0, keepdim=True), valid)
-                loss_fake = criterionMSE(pred_fake-pred_real.mean(0, keepdim=True), fake)
+                # loss_real = criterionMSE(pred_real-pred_fake.mean(0, keepdim=True), valid)
+                loss_real = criterionMSE(pred_real, valid)
+                # loss_fake = criterionMSE(pred_fake-pred_real.mean(0, keepdim=True), fake)
+                loss_fake = criterionMSE(pred_fake, fake)
                 loss_D = 0.5 * (loss_real + loss_fake)
                 loss_D.backward()
                 optimizer_D.step()
@@ -111,7 +114,6 @@ def train(args, epoch, run, dataloader, generator, feature_extractor, discrimina
             loss_G = p*loss_pixel + (1-p)*loss_percep 
             loss_G.backward()
             total_loss = total_loss + loss_G.item()
-            loss_pixel.backward()
             optimizer_G.step()        
             epoch_loss = epoch_loss + total_loss
             sys.stdout.write('\r[%d/%d][%d/%d] Generator_Loss (Identity/Percep): %.4f/%.4f' 
@@ -176,8 +178,8 @@ def main():
     parser.add_argument('--num-epochs', default=900, type=int, help='Number of epochs, more epochs are desired for GAN training')
     parser.add_argument('--g-lr', default=0.0001, type=float, help='Learning rate of the generator')
     parser.add_argument('--d-lr', default=0.00001, type=float, help='Learning rate of the descriminator')
-    parser.add_argument('--gan-weight', default=5e-3, type=float, help='GAN loss weight')
-    parser.add_argument('--pixel-weight', default=0.5, type=float, help='Identity loss weight')
+    parser.add_argument('--gan-weight', default=5e-2, type=float, help='GAN loss weight')
+    parser.add_argument('--pixel-weight', default=0.75, type=float, help='Identity loss weight')
     parser.add_argument('--run-from', default=None, type=str, help='Load weights from a previous run, use folder name in [weights] folder')
     parser.add_argument('--gan', default=1, type=int, help='Use GAN')
     parser.add_argument('--norm-layer', default='none', type=str, help='Normalization layer type [none|batch|instance]')   
