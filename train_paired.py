@@ -108,7 +108,7 @@ def train(args, epoch, run, dataloader, generator, feature_extractor, discrimina
             
             # Perceptual loss
             fake_features = feature_extractor(fake_high)
-            real_features = feature_extractor(real_low).detach()
+            real_features = feature_extractor(real_high).detach()
             loss_percep = criterion_percep(fake_features, real_features)
             
             loss_G = p*loss_pixel + (1-p)*loss_percep 

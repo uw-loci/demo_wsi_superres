@@ -109,7 +109,7 @@ def train(args, epoch, run, dataloader, generator, discriminator, optimizer_G, o
             
             # Perceptual loss
             fake_features = feature_extractor(fake_high)
-            real_features = feature_extractor(real_low).detach()
+            real_features = feature_extractor(real_high).detach()
             loss_percep = criterion_percep(fake_features, real_features)
             
             loss_G = p*loss_pixel + (1-p)*loss_percep 
@@ -273,8 +273,6 @@ def main():
     criterion_pixel = nn.L1Loss().to(device)
     criterionMSE = nn.MSELoss().to(device)
     criterion_percep = nn.L1Loss().to(device)
-    optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.g_lr)
-    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.d_lr)
     patch = (1, args.patch_size // 2 ** 4, args.patch_size // 2 ** 4)
     if args.run_from is not None:
         generator.load_state_dict(torch.load(os.path.join('weights', args.run_from, 'generator.pth')))
