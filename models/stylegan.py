@@ -1,4 +1,4 @@
-mport torch
+import torch
 
 from torch import nn
 from torch.nn import init
@@ -405,19 +405,24 @@ class Generator(nn.Module):
         
         self.fusion = nn.ModuleList(
             [
-                nn.Identity(), # place holder
-                nn.Conv2d(576, 512, 3, 1, 1), # 512 x 4 x 4
-                nn.Conv2d(576, 512, 3, 1, 1), # 512 x 8 x 8
-                nn.Conv2d(576, 512, 3, 1, 1), # 512 x 16 x 16
-                nn.Conv2d(576, 512, 3, 1, 1), # 512 x 32 x 32
-                nn.Conv2d(256, 256, 3, 1, 1), # 256 x 64 x 64
-                nn.Conv2d(128, 128, 3, 1, 1), # 128 x 128 x 128
+#                 nn.Conv2d(512, 512, 3, 1, 1), # 512 x 1 x 1
+                nn.Identity(),
+                nn.Conv2d(576, 512, 1, 1), # 512 x 4 x 4
+                nn.Conv2d(576, 512, 1, 1), # 512 x 8 x 8
+                nn.Conv2d(576, 512, 1, 1), # 512 x 16 x 16
+                nn.Conv2d(576, 512, 1, 1), # 512 x 32 x 32
+                nn.Conv2d(256, 256, 1, 1), # 256 x 64 x 64
+                nn.Conv2d(128, 128, 1, 1), # 128 x 128 x 128
             ]
         )
         # self.blur = Blur()
 
-    def forward(self, style, noise, step=0, alpha=-1, mixing_range=(-1, -1), bank=False, features=None, codes=None):
-        out = noise[0]
+    def forward(self, style, noise, step=0, alpha=-1, mixing_range=(-1, -1), bank=False, feats=None, codes=None):
+        if bank:
+            codes[0] = codes[0].view(codes[0].shape[0], 1, codes[0].shape[1], codes[0].shape[2])
+            out = noise[0]+codes[0]
+        else:
+            out = noise[0]
 
         if len(style) < 2:
             inject_index = [len(self.progression) + 1]
@@ -447,14 +452,15 @@ class Generator(nn.Module):
                 out_prev = out
                 
             if bank and i > 0 and i < 5:
-                code = F.interpolate(codes[i], scale_factor=2*(2**i))
-                out = nn.fusion[i](torch.cat((out+code, features[i]), 0))
+                out = self.fusion[i](torch.cat((out, feats[i-1]), 1))
                 
-            elif bank and i >= 5:
-                code = F.interpolate(codes[i], scale_factor=2*(2**i))
-                out = nn.fusion[i](torch.cat((out+code), 0))
-                
-            out = conv(out, style_step, noise[i])
+            if bank:
+                out = conv(out, style_step+codes[i+1], noise[i])
+            else:
+                out = conv(out, style_step, noise[i])
+            
+            if bank and i >= 4:
+                out_codes.append(out)
 
             if i == step:
                 out = to_rgb(out)
@@ -466,13 +472,10 @@ class Generator(nn.Module):
 
                 break
                 
-            if if bank and i >= 4:
-                out_codes.append(out)
-
-                return out, out_codes
-            
-            else:
-                return out
+        if bank:    
+            return out_codes
+        else:
+            return out
 
 
 class StyledGenerator(nn.Module):
@@ -525,7 +528,7 @@ class StyledGenerator(nn.Module):
 
             styles = styles_norm
 
-        return self.generator(styles, noise, step, alpha, mixing_range=mixing_range, bank, feats, codes)
+        return self.generator(styles, noise, step, alpha, mixing_range=mixing_range, bank=bank, feats=feats, codes=codes)
 
     def mean_style(self, input):
         style = self.style(input).mean(0, keepdim=True)

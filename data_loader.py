@@ -30,9 +30,10 @@ class Paired_Dataset(Dataset):
         high_name = os.path.join(self.files_list.iloc[idx, 1])
         low_image = Image.open(low_name)
         high_image = Image.open(high_name)
-        if low_image.size[0] != self.img_size:
-            low_image = low_image.resize((self.img_size, self.img_size))
-            high_image = high_image.resize((self.img_size, self.img_size))
+        if low_image.size[0] != self.img_size or low_image.size[1] != self.img_size:
+            low_image = low_image.resize((self.img_size, self.img_size), Image.BILINEAR)
+        if high_image.size[0] != self.img_size or high_image.size[1] != self.img_size:
+            high_image = high_image.resize((self.img_size, self.img_size), Image.BILINEAR)
 
         sample = {'input': low_image, 'output': high_image}
 
@@ -52,9 +53,14 @@ class Compress_Dataset(Dataset):
     def __getitem__(self, idx):             
         img_name = self.files_list.iloc[idx, 0] # image path
         img = Image.open(img_name)
+        
         if self.transform:
             sample = self.transform(img)
         return sample
+    
+class Duplicate(object):
+    def __call__(self, img):
+        return {'input': img, 'output': img}
     
 class Compose(object):
     def __init__(self, transforms):
@@ -73,6 +79,16 @@ class Compose(object):
         format_string += '\n)'
         return format_string 
     
+class Resize(object):
+    def __init__(self, input_size):
+        assert isinstance(input_size, (int, tuple))
+        self.input_size = input_size
+
+    def __call__(self, sample):
+        img_low, img_high = sample['input'], sample['output']         
+        img_low = img_low.resize((self.input_size, self.input_size), Image.BILINEAR)
+        return {'input': img_low, 'output': img_high}
+    
 class Rescale(object):
     def __init__(self, output_size, up_factor=5, stc=False):
         assert isinstance(output_size, (int, tuple))
@@ -81,7 +97,7 @@ class Rescale(object):
         self.stc = stc
 
     def __call__(self, img):
-        img_high = img
+        img_low, img_high = sample['input'], sample['output'] 
         if self.stc == True:
             factor = max(1, np.random.normal(self.up_factor, 0.5))
         else:

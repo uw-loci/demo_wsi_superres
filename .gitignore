@@ -5,3 +5,4 @@ dataset/
 output/
 *.ipynb
 __pycache__
+latent_bank_weights/

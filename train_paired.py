@@ -111,7 +111,6 @@ def train(args, epoch, run, dataloader, generator, feature_extractor, discrimina
             loss_G = p*loss_pixel + (1-p)*loss_percep 
             loss_G.backward()
             total_loss = total_loss + loss_G.item()
-            loss_pixel.backward()
             optimizer_G.step()        
             epoch_loss = epoch_loss + total_loss
             sys.stdout.write('\r[%d/%d][%d/%d] Generator_Loss (Identity/Percep): %.4f/%.4f' 
