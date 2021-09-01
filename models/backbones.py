@@ -162,7 +162,11 @@ class Decoder(nn.Module):
         self.up1 = UpSampleBlock(base_filters, base_filters) # in 64x32x32 out 64x64x64
         self.up2 = UpSampleBlock(base_filters+256, base_filters) # in 128x64x64 out 64x128x128
         self.up3 = UpSampleBlock(base_filters+128, base_filters) # in 128x128x128 out 64x256x256
-        self.out = nn.Conv2d(base_filters+64, img_channels, 3, 1, 1) # in 64x256x256 out 3x256x256
+        self.out = nn.Sequential(
+            nn.Conv2d(base_filters+64, 64, 3, 1, 1),
+            nn.LeakyReLU(negative_slope=0.2, inplace=True),
+            nn.Conv2d(64, 3, 3, 1, 1),
+        )        # in 64x256x256 out 3x256x256
         
     def forward(self, feats, codes):
         out1 = self.up1(feats) # out 64x64x64

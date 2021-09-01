@@ -196,9 +196,9 @@ def print_output(epoch, generator, dataloader_valid, metric='FID'):
 
 def main():
     parser = argparse.ArgumentParser(description='Train WSISR on compressed TMA dataset')
-    parser.add_argument('--batch-size', default=1, type=int, help='Batch size')
+    parser.add_argument('--batch-size', default=4, type=int, help='Batch size')
     parser.add_argument('--patch-size', default=256, type=int, help='Patch size')
-    parser.add_argument('--num-workers', default=8, type=int, help='Number of workers')
+    parser.add_argument('--num-workers', default=4, type=int, help='Number of workers')
     parser.add_argument('--num-epochs', default=900, type=int, help='Number of epochs, more epochs are desired for GAN training')
     parser.add_argument('--g-lr', default=0.0001, type=float, help='Learning rate of the generator')
     parser.add_argument('--d-lr', default=0.00001, type=float, help='Learning rate of the descriminator')
