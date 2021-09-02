@@ -80,13 +80,16 @@ class Compose(object):
         return format_string 
     
 class Resize(object):
-    def __init__(self, input_size):
+    def __init__(self, input_size, output_size=None):
         assert isinstance(input_size, (int, tuple))
         self.input_size = input_size
+        self.output_size = output_size
 
     def __call__(self, sample):
         img_low, img_high = sample['input'], sample['output']         
         img_low = img_low.resize((self.input_size, self.input_size), Image.BILINEAR)
+        if self.output_size is not None:
+            img_low = img_low.resize((self.output_size, self.output_size), Image.BILINEAR)
         return {'input': img_low, 'output': img_high}
     
 class Rescale(object):

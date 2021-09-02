@@ -2,17 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F     
-from torchvision.models import vgg19
-
-
-class FeatureExtractor(nn.Module):
-    def __init__(self):
-        super(FeatureExtractor, self).__init__()
-        vgg19_model = vgg19(pretrained=True)
-        self.vgg19_54 = nn.Sequential(*list(vgg19_model.features.children())[:35])
-
-    def forward(self, img):
-        return self.vgg19_54(img)
     
 class UpSampleBlock(nn.Module):
     """
@@ -159,48 +148,26 @@ class Decoder(nn.Module):
     def __init__(self, img_channels=3, base_filters=64, latent_features=128):
         super(Decoder, self).__init__()
         
+        self.fusion1 = nn.Sequential(nn.Conv2d(288, base_filters, 3, 1, 1), nn.LeakyReLU(negative_slope=0.2, inplace=True))         
+        self.fusion2 = nn.Sequential(nn.Conv2d(144, base_filters, 3, 1, 1), nn.LeakyReLU(negative_slope=0.2, inplace=True))
+        
         self.up1 = UpSampleBlock(base_filters, base_filters) # in 64x32x32 out 64x64x64
-        self.up2 = UpSampleBlock(base_filters+256, base_filters) # in 128x64x64 out 64x128x128
-        self.up3 = UpSampleBlock(base_filters+128, base_filters) # in 128x128x128 out 64x256x256
+        self.up2 = UpSampleBlock(base_filters*2, base_filters) # in 128x64x64 out 64x128x128
+        self.up3 = UpSampleBlock(base_filters*2, base_filters) # in 128x128x128 out 64x256x256
         self.out = nn.Sequential(
-            nn.Conv2d(base_filters+64, 64, 3, 1, 1),
+            nn.Conv2d(base_filters*2, base_filters, 3, 1, 1),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            nn.Conv2d(64, 3, 3, 1, 1),
+            nn.Conv2d(base_filters, 3, 3, 1, 1),
         )        # in 64x256x256 out 3x256x256
         
-    def forward(self, feats, codes):
-        out1 = self.up1(feats) # out 64x64x64
-        out2 = self.up2(torch.cat((out1, codes[0]), 1))
-        out3 = self.up3(torch.cat((out2, codes[1]), 1))
+    def forward(self, codes, infos): # om 32x32
+        
+        fuse1 = self.fusion1(torch.cat((codes[0], infos[1]), 1))
+        fuse2 = self.fusion2(torch.cat((codes[1], infos[2]), 1))
+        
+        out1 = self.up1(infos[0]) # out 64x64x64
+        out2 = self.up2(torch.cat((out1, fuse1), 1))
+        out3 = self.up3(torch.cat((out2, fuse2), 1))
         out = self.out(torch.cat((out3, codes[2]), 1))
         
         return out
-
-
-class Discriminator(nn.Module):
-    def __init__(self, in_channels=3, norm=None):
-        super(Discriminator, self).__init__()
-
-        def discriminator_block(in_filters, out_filters, norm=None):
-            """Returns downsampling layers of each discriminator block"""
-            layers = [nn.Conv2d(in_filters, out_filters, 4, stride=2, padding=1)]
-            if norm == 'instance':
-                layers.append(nn.InstanceNorm2d(out_filters))
-            if norm == 'batch':
-                layers.append(nn.BatchNorm2d(out_filters))
-            layers.append(nn.LeakyReLU(negative_slope=0.2, inplace=True))
-            return layers
-
-        self.model = nn.Sequential(
-            *discriminator_block(in_channels * 2, 64, norm),
-            *discriminator_block(64, 128, norm),
-            *discriminator_block(128, 256, norm),
-            *discriminator_block(256, 512, norm),
-            nn.ZeroPad2d((1, 0, 1, 0)),
-            nn.Conv2d(512, 1, 4, padding=1, bias=False)
-        )
-
-    def forward(self, img_A, img_B):
-        """Concatenate image and condition image by channels to produce input"""
-        img_input = torch.cat((img_A, img_B), 1)
-        return self.model(img_input)

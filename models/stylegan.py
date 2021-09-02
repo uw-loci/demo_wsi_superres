@@ -411,8 +411,8 @@ class Generator(nn.Module):
                 nn.Conv2d(576, 512, 1, 1), # 512 x 8 x 8
                 nn.Conv2d(576, 512, 1, 1), # 512 x 16 x 16
                 nn.Conv2d(576, 512, 1, 1), # 512 x 32 x 32
-                nn.Conv2d(256, 256, 1, 1), # 256 x 64 x 64
-                nn.Conv2d(128, 128, 1, 1), # 128 x 128 x 128
+                nn.Conv2d(288, 256, 1, 1), # 256 x 64 x 64
+                nn.Conv2d(144, 128, 1, 1), # 128 x 128 x 128
             ]
         )
         # self.blur = Blur()
@@ -451,7 +451,7 @@ class Generator(nn.Module):
             if i > 0 and step > 0:
                 out_prev = out
                 
-            if bank and i > 0 and i < 5:
+            if bank and i > 0 and i < 7: # 6
                 out = self.fusion[i](torch.cat((out, feats[i-1]), 1))
                 
             if bank:

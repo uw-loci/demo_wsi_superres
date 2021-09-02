@@ -18,7 +18,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from skimage import io, img_as_float
 
 import data_loader as data
-from models import stylegan, backbones, models
+from models import stylegan, constant_encoder, models, backbones
 import pytorch_fid.fid_score as fid_score
 
 
@@ -37,7 +37,7 @@ def compress_dataloader(args, csv='train'):
                                                   transforms.RandomHorizontalFlip(),
                                                   transforms.RandomVerticalFlip(),
                                                   data.Duplicate(),
-                                                  data.Resize(int(args.patch_size/8)), 
+                                                  data.Resize(int(args.patch_size/8), args.patch_size), 
                                                   data.ToTensor()])
                                               )
     dataloader = DataLoader(transformed_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
@@ -196,7 +196,7 @@ def print_output(epoch, generator, dataloader_valid, metric='FID'):
 
 def main():
     parser = argparse.ArgumentParser(description='Train WSISR on compressed TMA dataset')
-    parser.add_argument('--batch-size', default=4, type=int, help='Batch size')
+    parser.add_argument('--batch-size', default=1, type=int, help='Batch size')
     parser.add_argument('--patch-size', default=256, type=int, help='Patch size')
     parser.add_argument('--num-workers', default=4, type=int, help='Number of workers')
     parser.add_argument('--num-epochs', default=900, type=int, help='Number of epochs, more epochs are desired for GAN training')
@@ -229,8 +229,8 @@ def main():
         test_dataset = compress_dataloader(args, 'test')
         
     latent_bank = stylegan.StyledGenerator().to(device)
-    encoder = backbones.Encoder().to(device)
-    decoder = backbones.Decoder().to(device)
+    encoder = constant_encoder.Encoder().to(device)
+    decoder = constant_encoder.Decoder().to(device)
     latent_weights = torch.load('latent_bank_weights/130000.model')
     latent_bank.load_state_dict(latent_weights, strict=False)
     for p in latent_bank.parameters():
@@ -240,7 +240,7 @@ def main():
     trainable_params = list(latent_bank.generator.fusion.parameters()) + list(encoder.parameters()) + list(decoder.parameters())
     generator = models.EDLatentBank(encoder, decoder, latent_bank).to(device)
     
-    feature_extractor = backbones.FeatureExtractor().to(device)
+    feature_extractor = models.FeatureExtractor().to(device)
     feature_extractor.eval()
     criterion_pixel = nn.L1Loss().to(device)
     criterion_percep = nn.L1Loss().to(device)

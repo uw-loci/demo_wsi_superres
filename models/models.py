@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchvision.models import vgg19
 
 class EDLatentBank(nn.Module):
     def __init__(self, encoder, decoder, latent_bank):
@@ -12,10 +13,10 @@ class EDLatentBank(nn.Module):
         
     def forward(self, img, step=6, bank=True, code_dim=512):
         device = next(self.encoder.parameters()).device
-        feats, codes = self.encoder(img)
+        feats, codes, infos = self.encoder(img)
         gen = torch.randn(img.shape[0], code_dim, device=device)
         bank_codes = self.latent_bank(gen, step=step, bank=bank, feats=feats, codes=codes)
-        out = self.decoder(feats=feats[-1], codes=bank_codes)
+        out = self.decoder(codes=bank_codes, infos=infos)
         
         return out
     
@@ -47,3 +48,13 @@ class Discriminator(nn.Module):
         img_B = F.interpolate(img_B, size=(img_A.shape[2], img_A.shape[3]))
         img_input = torch.cat((img_A, img_B), 1)
         return self.model(img_input)
+    
+        
+class FeatureExtractor(nn.Module):
+    def __init__(self):
+        super(FeatureExtractor, self).__init__()
+        vgg19_model = vgg19(pretrained=True)
+        self.vgg19_54 = nn.Sequential(*list(vgg19_model.features.children())[:35])
+
+    def forward(self, img):
+        return self.vgg19_54(img)
