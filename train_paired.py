@@ -22,7 +22,8 @@ from PIL import Image, ImageFilter
 import imagej
 
 import data_loader as data
-import models
+import models_wsi as models
+
 
 import pytorch_fid.fid_score as fid_score
 

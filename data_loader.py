@@ -10,6 +10,7 @@ from torchvision import transforms, utils
 import torchvision.transforms.functional as F
 from PIL import Image, ImageFilter
 from sklearn.utils import shuffle
+import copy
 
 plt.ion()   # interactive mode
 
@@ -100,14 +101,15 @@ class Rescale(object):
         self.stc = stc
 
     def __call__(self, img):
-        img_low, img_high = sample['input'], sample['output'] 
+        img_low = copy.deepcopy(img)
+        img_high = copy.deepcopy(img)
         if self.stc == True:
             factor = max(1, np.random.normal(self.up_factor, 0.5))
         else:
             factor = self.up_factor           
         img_low = img_high.resize((int(img.size[1]/factor), int(img.size[0]/factor)))
         img_low = img_low.resize(self.output_size, Image.BILINEAR)
-        img_low = img_low.filter(ImageFilter.GaussianBlur(radius=((factor-1)/2)))
+#         img_low = img_low.filter(ImageFilter.GaussianBlur(radius=((factor-1)/2)))
         
         return {'input': img_low, 'output': img_high}
 

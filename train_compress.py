@@ -22,12 +22,13 @@ from PIL import Image, ImageFilter
 import imagej
 
 import data_loader as data
-import models
+import models_wsi as models
+
 
 import pytorch_fid.fid_score as fid_score
 
 
-def new_compress_curriculum(args, cur_factor, csv='train', stc=False):
+def new_compress_curriculum(args, cur_factor, csv='train', stc=False, shuffle=True):
     transformed_dataset = data.Compress_Dataset(csv_file=data.compress_csv_path(csv, args.dataset),
                                                transform=data.Compose([
                                                    transforms.RandomCrop((args.patch_size, args.patch_size)),
@@ -36,7 +37,7 @@ def new_compress_curriculum(args, cur_factor, csv='train', stc=False):
                                                    data.Rescale((args.patch_size, args.patch_size), up_factor=cur_factor, stc=stc), 
                                                    data.ToTensor()
                                            ]))
-    dataloader = DataLoader(transformed_dataset, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
+    dataloader = DataLoader(transformed_dataset, batch_size=args.batch_size, shuffle=shuffle, num_workers=args.num_workers)
     return dataloader
 
 def train(args, epoch, run, dataloader, generator, feature_extractor, discriminator, optimizer_G, optimizer_D, criterion_pixel, criterion_percep, criterionMSE, Tensor=None, device='cuda:0', patch=None):
@@ -109,14 +110,13 @@ def train(args, epoch, run, dataloader, generator, feature_extractor, discrimina
             
             # Perceptual loss
             fake_features = feature_extractor(fake_high)
-            real_features = feature_extractor(real_low).detach()
+            real_features = feature_extractor(real_high).detach()
             loss_percep = criterion_percep(fake_features, real_features)
             
             loss_G = p*loss_pixel + (1-p)*loss_percep 
             loss_G.backward()
+            optimizer_G.step()  
             total_loss = total_loss + loss_G.item()
-            loss_pixel.backward()
-            optimizer_G.step()        
             epoch_loss = epoch_loss + total_loss
             sys.stdout.write('\r[%d/%d][%d/%d] Generator_Loss (Identity/Percep): %.4f/%.4f' 
                              % (epoch, args.num_epochs, iteration, len(dataloader), loss_pixel.item(), loss_percep.item()))
@@ -257,21 +257,29 @@ def main():
     parser.add_argument('--start-epoch', default=1, type=int, help='Starting epoch for the curriculum, start at 1/2 of the epochs to skip the curriculum')
     parser.add_argument('--gan', default=1, type=int, help='Use GAN')
     parser.add_argument('--num-critic', default=1, type=int, help='Iteration interval for training the descriminator') 
-    parser.add_argument('--test-interval', default=50, type=int, help='Epoch interval for FID score testing')
-    parser.add_argument('--print-interval', default=10, type=int, help='Epoch interval for output printing')     
+    parser.add_argument('--test-interval', default=100, type=int, help='Epoch interval for FID score testing')
+    parser.add_argument('--print-interval', default=5, type=int, help='Epoch interval for output printing')     
     parser.add_argument('--dataset', default='TMA', type=str, help='Dataset folder name')
+    parser.add_argument('--ext', default='jpg', type=str, help='Image extension')
+    parser.add_argument('--percep', default='simclr', type=str)
     args = parser.parse_args()
     warnings.filterwarnings('ignore')
     device = torch.device('cuda:0')
     tensor = torch.cuda.FloatTensor
-    data.generate_compress_csv()
-    valid_dataset = new_compress_curriculum(args, args.up_scale, 'valid')
+#     data.generate_compress_csv(dataset=args.dataset, ext=args.ext)
+    valid_dataset = new_compress_curriculum(args, args.up_scale, 'valid', shuffle=False)
     generator = models.Generator()
     generator.to(device)
     discriminator = models.Discriminator()
     discriminator.to(device)
-    feature_extractor = models.FeatureExtractor().to(device)
+    if args.percep == 'vgg':
+        feature_extractor = models.FeatureExtractor().to(device)
+    elif args.percep == 'resnet':
+        feature_extractor = models.ResNetFeatureExtractor()
+    elif args.percep == 'simclr':
+        feature_extractor = models.ResNetFeatureExtractor(weights_path='simclr-ins-renamed.pth', normalization='instance')
     feature_extractor.eval()
+    feature_extractor.to(device)
     criterion_pixel = nn.L1Loss().to(device)
     criterionMSE = nn.MSELoss().to(device)
     criterion_percep = nn.L1Loss().to(device)
@@ -296,9 +304,12 @@ def main():
     print('loading ImageJ, please wait')
     ij = imagej.init('fiji/fiji/Fiji.app/')
     for epoch in range(args.start_epoch, args.num_epochs):
-        factor = min(log2(init_scale+(epoch-1)*step_size), args.up_scale)
+        print_output(generator, valid_dataset, device)
+#         break
+#         factor = min(log2(init_scale+(epoch-1)*step_size), args.up_scale)
+        factor = args.up_scale
         print('curriculum updated: {} '.format(factor))
-        train_dataset = new_compress_curriculum(args, factor, 'train', stc=True)
+        train_dataset = new_compress_curriculum(args, factor, 'train', stc=False)
         train(args, epoch, run, train_dataset, generator, feature_extractor, discriminator, optimizer_G, optimizer_D, criterion_pixel, criterion_percep, criterionMSE, tensor, device, patch)
         scheduler_G.step()
         scheduler_D.step()
@@ -307,7 +318,7 @@ def main():
             print('\r>>>> PSNR: {}, FID: {}'.format(psnr, fid))
         if epoch % args.print_interval == 0:
             print_output(generator, valid_dataset, device)
-    test(args, generator, data.compress_csv_path('test', args.dataset), stitching=True, ij=ij)
+#     test(args, generator, data.compress_csv_path('test', args.dataset), stitching=True, ij=ij)
     
 if __name__ == '__main__':
     main()
